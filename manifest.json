@@ -1,19 +1,43 @@
 {
-  "name": "Hello World",
-  "short_name": "Hello",
-  "icons": [{
-      "src": "images/icon192.png",
+  "name": "DiscountMap - Find Your Savings",
+  "short_name": "DiscountMap",
+  "description": "Make photos of discounts and share them with others!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ececec",
+  "theme_color": "#ff4f3a",
+  "lang": "en",
+  "categories": ["shopping", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "images/icon512.png",
+      "src": "icons/icon512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    }],
-  "lang": "en-US",
-  "start_url": "/index.html",
-  "display": "standalone",
-  "background_color": "white",
-  "theme_color": "white"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Share a Discount",
+      "short_name": "Share",
+      "description": "Share a new discount with community",
+      "url": "./index.html?action=add",
+      "icons": [{ "src": "icons/icon192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Discount Map",
+      "short_name": "Map",
+      "description": "See shared discounts on a map",
+      "url": "./index.html?action=map",
+      "icons": [{ "src": "icons/icon192.png", "sizes": "192x192" }]
+    }
+  ]
 }
