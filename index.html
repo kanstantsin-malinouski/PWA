@@ -413,7 +413,7 @@
         margin-right: 10px;
       }
     }
-</style>
+  </style>
 </head>
 <body>
 <div id="offlineToast">Saved</div>
@@ -513,5 +513,306 @@
     <button class="save-btn w-100" id="installBtn"><i class="bi bi-download me-1"></i>Install app</button>
   </div>
 </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let deals = JSON.parse(localStorage.getItem('discount_deals') || '[]');
+let currentLat = null, currentLng = null;
+let capturedImageData = null;
+let cameraStream = null;
+let map = null;
+let markers = [];
+let deferredPrompt = null;
+
+const stageWrap = document.getElementById('stageWrap');
+const modeTitle = document.getElementById('modeTitle');
+const statusText = document.getElementById('statusText');
+const detailsCard = document.getElementById('detailsCard');
+const cameraControls = document.getElementById('cameraControls');
+const cameraPreview = document.getElementById('cameraPreview');
+const capturedPhoto = document.getElementById('capturedPhoto');
+
+const sampleImages = [
+  'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',
+  'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80',
+  'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80'
+];
+
+function setStage(mode) {
+  stageWrap.classList.remove('is-camera', 'is-map', 'is-photo');
+  document.querySelectorAll('.stage-panel').forEach(el => el.classList.remove('active'));
+
+  modeTitle.textContent = 'FindMap';
+
+  if (mode === 'camera') {
+    stageWrap.classList.add('is-camera');
+    document.getElementById('cameraPanel').classList.add('active');
+    statusText.textContent = 'Camera is open';
+    cameraControls.classList.add('show');
+  } else if (mode === 'map') {
+    stageWrap.classList.add('is-map');
+    document.getElementById('mapPanel').classList.add('active');
+    statusText.textContent = deals.length ? 'All saved discounts on the map' : 'Map is ready';
+    cameraControls.classList.remove('show');
+  } else if (mode === 'photo') {
+    stageWrap.classList.add('is-photo');
+    document.getElementById('photoPanel').classList.add('active');
+    statusText.textContent = 'Photo captured';
+    cameraControls.classList.add('show');
+  } else {
+    statusText.textContent = 'Tap a button below';
+    cameraControls.classList.remove('show');
+  }
+}
+
+async function openCamera() {
+  try {
+    stopCamera();
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    cameraPreview.srcObject = cameraStream;
+    cameraPreview.style.display = 'block';
+    capturedPhoto.style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'none';
+    setStage('camera');
+    detailsCard.classList.remove('show');
+  } catch (e) {
+    showToast('No camera access, choose from gallery');
+  }
+}
+
+function capturePhoto() {
+  if (!cameraStream) return;
+  const canvas = document.getElementById('photoCanvas');
+  canvas.width = cameraPreview.videoWidth || 1280;
+  canvas.height = cameraPreview.videoHeight || 720;
+  canvas.getContext('2d').drawImage(cameraPreview, 0, 0, canvas.width, canvas.height);
+  capturedImageData = canvas.toDataURL('image/jpeg', 0.82);
+  capturedPhoto.src = capturedImageData;
+  capturedPhoto.style.display = 'block';
+  cameraPreview.style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'inline-block';
+  stopCamera();
+  setStage('photo');
+  detailsCard.classList.add('show');
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+function initMap() {
+  if (!map) {
+    map = L.map('map').setView([52.2297, 21.0122], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(map);
+  }
+  updateMapMarkers();
+  setTimeout(() => map.invalidateSize(), 150);
+}
+
+function updateMapMarkers() {
+  if (!map) return;
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const dealsWithLocation = deals.filter(d => d.lat && d.lng);
+  dealsWithLocation.forEach(d => {
+    const img = d.photo || sampleImages[0];
+    const marker = L.marker([d.lat, d.lng]).addTo(map);
+    marker.bindPopup(`
+      <div style="min-width:140px;">
+        <img src="${img}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />
+        <strong>${d.title || 'Discount'}</strong><br>
+        <span style="font-size:12px;color:#666;">${d.store || 'Store'}</span>
+      </div>
+    `);
+    markers.push(marker);
+  });
+
+  if (dealsWithLocation.length) {
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.35));
+  }
+}
+
+function renderDeals() {
+  const list = document.getElementById('dealsList');
+  document.getElementById('dealCount').textContent = deals.length;
+
+  if (!deals.length) {
+    list.innerHTML = '<div class="empty-state">No discounts saved yet</div>';
+    return;
+  }
+
+  list.innerHTML = deals.slice().reverse().map((d, ri) => {
+    const i = deals.length - 1 - ri;
+    const img = d.photo || sampleImages[i % sampleImages.length];
+    return `
+      <div class="deal-item">
+        <img src="${img}" class="deal-thumb" alt="${d.title || 'Discount'}" />
+        <div>
+          <div class="deal-name">${d.title || 'Discount'}</div>
+          <div class="deal-meta">${d.store || 'Store'} ${d.discount ? '• -' + d.discount + '%' : ''}</div>
+          <div class="deal-meta">${d.lat ? d.lat.toFixed(4) + ', ' + d.lng.toFixed(4) : 'No location yet'}</div>
+        </div>
+        <div class="deal-actions">
+          ${d.lat ? `<button class="icon-action" onclick="openMapForDeal(${d.lat}, ${d.lng})"><i class="bi bi-map"></i></button>` : ''}
+          <button class="icon-action" onclick="deleteDeal(${i})"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openMapForDeal(lat, lng) {
+  stopCamera();
+  setStage('map');
+  initMap();
+  setTimeout(() => {
+    map.setView([lat, lng], 16);
+  }, 200);
+}
+
+function deleteDeal(i) {
+  if (!confirm('Delete this discount?')) return;
+  deals.splice(i, 1);
+  saveDeals();
+  renderDeals();
+  updateMapMarkers();
+  showToast('Deleted');
+}
+
+function saveDeals() {
+  try {
+    localStorage.setItem('discount_deals', JSON.stringify(deals));
+  } catch (e) {}
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('offlineToast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+document.getElementById('captureDiscountBtn').addEventListener('click', openCamera);
+document.getElementById('seeMapBtn').addEventListener('click', () => {
+  stopCamera();
+  setStage('map');
+  initMap();
+});
+document.getElementById('shutterBtn').addEventListener('click', capturePhoto);
+document.getElementById('retakeBtn').addEventListener('click', openCamera);
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    capturedImageData = ev.target.result;
+    capturedPhoto.src = capturedImageData;
+    capturedPhoto.style.display = 'block';
+    cameraPreview.style.display = 'none';
+    stopCamera();
+    setStage('photo');
+    document.getElementById('retakeBtn').style.display = 'inline-block';
+    detailsCard.classList.add('show');
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('getLocationBtn').addEventListener('click', () => {
+  const btn = document.getElementById('getLocationBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Getting location';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Location added';
+      showToast('Location added');
+      updateMapMarkers();
+    },
+    () => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-geo-alt me-1"></i>Try again';
+      showToast('Location unavailable');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
+document.getElementById('saveDealBtn').addEventListener('click', () => {
+  const title = document.getElementById('dealTitle').value.trim();
+  if (!title) {
+    showToast('Add a discount name');
+    return;
+  }
+
+  deals.push({
+    id: Date.now(),
+    title,
+    store: document.getElementById('dealStore').value.trim(),
+    discount: document.getElementById('dealDiscount').value,
+    expiry: document.getElementById('dealExpiry').value,
+    desc: document.getElementById('dealDesc').value.trim(),
+    lat: currentLat,
+    lng: currentLng,
+    photo: capturedImageData,
+    createdAt: new Date().toISOString()
+  });
+
+  saveDeals();
+  renderDeals();
+  updateMapMarkers();
+  showToast('Discount saved');
+
+  document.getElementById('dealTitle').value = '';
+  document.getElementById('dealStore').value = '';
+  document.getElementById('dealDiscount').value = '';
+  document.getElementById('dealExpiry').value = '';
+  document.getElementById('dealDesc').value = '';
+  document.getElementById('getLocationBtn').innerHTML = '<i class="bi bi-geo-alt me-1"></i>Get my location';
+  capturedImageData = null;
+  currentLat = null;
+  currentLng = null;
+  detailsCard.classList.remove('show');
+  capturedPhoto.style.display = 'none';
+  setStage();
+});
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) {
+    showToast('Use browser menu to install');
+    return;s
+  }
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+});
+
+window.addEventListener('online', () => showToast('Back online'));
+window.addEventListener('offline', () => showToast('Offline mode'));
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+renderDeals();
+setStage();
+</script>
 </body>
 </html>
