@@ -1,6 +1,6 @@
 # DiscountMap
 
-<img src="discount.png" alt="Promotion" width="600"/>
+<img src="images/discount.png" alt="Promotion" width="600"/>
 
 ## Description
 
