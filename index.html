@@ -229,6 +229,191 @@
       background: var(--white);
       color: var(--accent-dark);
     }
+    
+
+    .details-card,
+    .list-card,
+    .install-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 14px;
+      margin: 14px 14px 0;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .details-card { display: none; }
+    .details-card.show { display: block; }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      border-radius: 10px;
+      border: 1px solid #dddddd;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      box-shadow: none !important;
+    }
+
+    .helper-line {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.9);
+      text-align: center;
+      margin: 2px 0 8px;
+      min-height: 18px;
+      font-weight: 600;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .deal-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #efefef;
+      align-items: center;
+    }
+
+    .deal-item:last-child { border-bottom: none; }
+
+    .deal-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #ececec;
+      flex-shrink: 0;
+    }
+
+    .deal-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .deal-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .deal-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-action {
+      border: none;
+      background: #f4f4f4;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      color: #444;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #8c8c8c;
+      font-size: 0.88rem;
+      padding: 12px 0 4px;
+    }
+
+    #offlineToast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+    }
+
+    #offlineToast.show { opacity: 1; }
+
+    #installBanner { display: none; }
+
+    @media (min-width: 700px) {
+      .brand-card {
+        padding-top: 36px;
+        padding-bottom: 18px;
+      }
+
+      .content-zone {
+        padding: 0 24px 14px;
+      }
+
+      .stage {
+        height: 315px;
+        min-height: 315px;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .brand-card {
+        padding-top: 34px;
+        padding-bottom: 10px;
+      }
+
+      .brand-title { font-size: 1.5rem; }
+      .brand-subtitle { font-size: 0.72rem; margin-top: 2px; }
+      .mode-title { font-size: 1.25rem; padding: 11px 10px 10px; }
+      .content-zone { padding: 0; }
+      .stage-wrap {
+        flex: 1;
+        padding: 0;
+        align-items: stretch;
+      }
+      .stage {
+        width: 100%;
+        height: 100%;
+        min-height: 280px;
+        border-radius: 0;
+      }
+      #map { border-radius: 0; }
+      .helper-line {
+        margin: 0;
+        min-height: 0;
+        font-size: 0;
+      }
+      .camera-controls {
+        margin: 0;
+        padding: 8px 12px 0;
+      }
+      .button-row {
+        justify-content: center;
+        gap: 18px;
+        padding: 14px 0 24px;
+      }
+      .action-btn {
+        width: 84px;
+        min-height: 66px;
+        border-radius: 12px;
+      }
+      .action-btn i { font-size: 1.7rem; }
+      .details-card,
+      .list-card,
+      .install-card {
+        margin-left: 10px;
+        margin-right: 10px;
+      }
+    }
+  </style>
 </style>
 </head>
 <body>
