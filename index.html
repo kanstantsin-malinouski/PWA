@@ -664,6 +664,7 @@ function renderDeals() {
           <div class="deal-meta">${d.lat ? d.lat.toFixed(4) + ', ' + d.lng.toFixed(4) : 'No location yet'}</div>
         </div>
         <div class="deal-actions">
+          <button class="icon-action" onclick="shareDeal(${i})"><i class="bi bi-share"></i></button>
           ${d.lat ? `<button class="icon-action" onclick="openMapForDeal(${d.lat}, ${d.lng})"><i class="bi bi-map"></i></button>` : ''}
           <button class="icon-action" onclick="deleteDeal(${i})"><i class="bi bi-trash"></i></button>
         </div>
@@ -688,6 +689,55 @@ function deleteDeal(i) {
   renderDeals();
   updateMapMarkers();
   showToast('Deleted');
+}
+
+function dataUrlToFile(dataUrl, fileName) {
+  try {
+    const [meta, data] = dataUrl.split(',');
+    const mimeMatch = meta.match(/data:(.*?);base64/);
+    if (!mimeMatch) return null;
+    const mime = mimeMatch[1];
+    const binary = atob(data);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], fileName, { type: mime });
+  } catch (e) {
+    return null;
+  }
+}
+
+async function shareDeal(i) {
+  const d = deals[i];
+  if (!d) return;
+
+  if (!navigator.share) {
+    showToast('Sharing is not supported on this device');
+    return;
+  }
+
+  const title = d.title || 'Discount';
+  const store = d.store ? `Store: ${d.store}` : '';
+  const discount = d.discount ? `Discount: -${d.discount}%` : '';
+  const mapUrl = d.lat && d.lng ? `https://maps.google.com/?q=${d.lat},${d.lng}` : '';
+  const locationLine = mapUrl ? `Location: ${mapUrl}` : 'Location: not added';
+  const text = [store, discount, locationLine].filter(Boolean).join('\n');
+
+  const shareData = { title, text };
+
+  try {
+    if (d.photo && d.photo.startsWith('data:image/')) {
+      const photoFile = dataUrlToFile(d.photo, `discount-${d.id || Date.now()}.jpg`);
+      if (photoFile && (!navigator.canShare || navigator.canShare({ files: [photoFile] }))) {
+        shareData.files = [photoFile];
+      }
+    }
+
+    await navigator.share(shareData);
+    showToast('Shared');
+  } catch (e) {
+    if (e && e.name !== 'AbortError') showToast('Unable to share');
+  }
 }
 
 function saveDeals() {
